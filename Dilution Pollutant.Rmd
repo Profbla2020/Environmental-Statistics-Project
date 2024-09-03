@@ -1,0 +1,136 @@
+---
+title: "Dilution Pollutant with experiment Value"
+author: "FIRST CROWN DATA ANALYST"
+date: "4/26/2021"
+output: html_document
+editor_options: 
+  chunk_output_type: inline
+---
+
+```{r setup, include=TRUE}
+knitr::opts_chunk$set(echo = TRUE, warning = FALSE)
+set.seed(123)
+sample1 = runif(1500, 0.14,0.26)
+sample2 = runif(1500, 0.14,0.26)
+sample3 = runif(1500, 0.14,0.26)
+sample4 = runif(1500, 0.14,0.26)
+sample = data.frame(sample1,sample2,sample3,sample4)
+head(sample)
+sample_product = sample$sample1*sample$sample2*sample$sample3*sample$sample4
+Sample = cbind(sample,sample_product)
+c4 = Sample$sample_product*360.5
+Data = cbind(Sample,c4)
+head(Data)
+tail(Data)
+library(ggplot2)
+hist(Data$c4, xlab = "Concentration in Beaker 4, C4",ylab = "Number of Observation",  xlim = c(0,2.0),ylim = c(0,350),main="Histogram of 1500 Runs",labels=TRUE)
+abline(v = mean(Data$c4), col = "blue", lwd = 2)
+text(x = 1.4, y = 275,paste("Mean =", mean(Data$c4)),col = "blue", cex = 1)
+text(x = 1.52, y = 250,paste("Std. Deviation =", sd(Data$c4)),col = "blue", cex = 1)
+summary(Data)
+model_data = Data$c4
+head(model_data)
+tail(model_data)
+summary(model_data)
+den = density(model_data)
+dat = data.frame(x = den$x, y = den$y)
+head(dat)
+# SHAPIRO TEST FOR NORMALITY. THIS IS TO ESTABLISH THE NORMALITY OF THE DATA fit
+shapiro.test(model_data)
+#LOADING REQUIRED PACKAGE FOR THE MODELS 
+library(fitdistrplus)
+library(ggplot2)
+library(MASS)
+# Estimating the shape and scale parameters using lognormal, gamma, weibull and normal distribution
+fg = fitdist(model_data, "gamma")
+fg
+summary(fg)
+fN  = fitdist(model_data, "norm")
+fN
+summary(fN)
+FW = fitdist(model_data, "weibull")
+FW
+summary(FW)
+fln = fitdist(model_data, "lnorm")
+fln
+summary(fln)
+# Plotting the density of Actual and fitted graph of lognormal, gamma, weibull and normal distribution of the data. i.e. fitting the parameters graphically
+#plotting the density 
+ggplot(data = dat, aes(x = x, y = y)) + geom_point(size = 2) + theme_classic()
+# for Actual and Fitted graph for Lognormal distribution
+ggplot(data = dat, aes(x=x, y=y)) +geom_point()+ geom_line(aes(x = x, y =dlnorm(dat$x, -0.61,0.37)), color = "red", size =1) +theme_classic()
+# for Actual and Fitted graph for Gamma distribution
+ggplot(data = dat, aes(x = x, y = y)) + geom_point(size = 2) + geom_line(aes(x = dat$x, y = dgamma(dat$x,fg$estimate["shape"], fg$estimate["rate"])), color = "red", size =1) + theme_classic()
+# for Actual and Fitted graph for Weibull distribution
+ggplot(data = dat, aes(x = x, y = y)) + geom_point() + geom_line(aes(x = x, y =dweibull(dat$x, FW$estimate["shape"],FW$estimate["scale"])), color = "red", size =1) 
+# for Actual and Fitted graph for Normal distribution
+ ggplot(data = dat, aes(x=x, y=y)) +geom_point()+ geom_line(aes(x = dat$x, y =dnorm(dat$x, 0.5774,0.2096)), color = "red", size =1) + theme_classic()
+# Compare the fits graphically
+par(mfrow = c(2,2))
+ plot.legend = c("Weibull","Lognormal","Gamma","Normal")
+denscomp(list(FW,fln,fN,fg), legendtext = plot.legend, fitlwd = 2)
+qqcomp(list(FW,fln,fN,fg), legendtext = plot.legend,fitlwd = 2)
+cdfcomp(list(FW,fln,fN,fg), legendtext = plot.legend, fitlwd = 2)
+ppcomp(list(FW,fln,fN,fg), legendtext = plot.legend, fitlwd = 2)
+#Comparing the Goodness of fit
+goodness_of_fit = gofstat(list(FW,fN,fg,fln))
+goodness_of_fit
+
+# plotting the gamma distribution with constant rate and different shape
+x_lower_g <- 0
+x_upper_g <- 24
+ ggplot(data.frame(x = c(x_lower_g , x_upper_g)), aes(x = x)) + xlim(c(x_lower_g , x_upper_g)) + 
+    stat_function(fun = dgamma, args = list(rate = 1, shape = 2), aes(colour = "1 & 2")) + 
+    stat_function(fun = dgamma, args = list(rate = 1, shape = 4), aes(colour = "1 & 4")) + 
+    stat_function(fun = dgamma, args = list(rate = 1, shape = 6), aes(colour = "1 & 6")) + 
+    stat_function(fun = dgamma, args = list(rate = 1, shape = 8), aes(colour = "1 & 8")) + 
+    stat_function(fun = dgamma, args = list(rate = 1, shape = 10), aes(colour = "1 & 10")) + 
+    stat_function(fun = dgamma, args = list(rate = 1, shape = 12), aes(colour = "1 & 12")) +            scale_color_manual("Scale & Shape \n Parameters", values = c("black","blue","red","brown","gray","green")) + labs(x = "\n x", y = "f(x) \n",  title = "Gamma Distribution Plots\n with constant scale and different Shape") +  theme(plot.title = element_text(hjust = 0.5), axis.title.x = element_text(face="bold", colour="blue", size = 15), axis.title.y = element_text(face="bold", colour="blue", size = 15), legend.title = element_text(face="bold", size = 12),legend.position = "right")
+ 
+ggplot(data.frame(x = c(x_lower_g , x_upper_g)), aes(x = x)) + xlim(c(x_lower_g , x_upper_g)) + 
+    stat_function(fun = dgamma, args = list(rate = 1, shape = 2), aes(colour = "1 & 2")) + 
+    stat_function(fun = dgamma, args = list(rate = 1, shape = 4), aes(colour = "1 & 4")) + 
+    stat_function(fun = dgamma, args = list(rate = 1, shape = 6), aes(colour = "1 & 6")) + 
+    stat_function(fun = dgamma, args = list(rate = 1, shape = 8), aes(colour = "1 & 8")) + 
+    stat_function(fun = dgamma, args = list(rate = 1, shape = 10), aes(colour = "1 & 10")) + 
+    stat_function(fun = dgamma, args = list(rate = 1, shape = 12), aes(colour = "1 & 12")) +            scale_color_manual("Scale & Shape \n Parameters", values = c("black","blue","red","brown","gray","green")) + labs(x = "\n x", y = "f(x) \n",  title = "Gamma Distribution Plots\n with constant scale and different Shape") +  theme(plot.title = element_text(hjust = 0.5), axis.title.x = element_text(face="bold", colour="blue", size = 15), axis.title.y = element_text(face="bold", colour="blue", size = 15), legend.title = element_text(face="bold", size = 12),legend.position = "right") + theme_classic()
+
+ # Negative Gamma Distribution for constant scale and different shapes  
+   library(ggallin)
+  x_lower_g <- 0
+x_upper_g <- 15
+  ggplot(data.frame(x = c(x_upper_g, x_lower_g)), aes(x = x)) + xlim(c(x_upper_g,x_lower_g)) + scale_y_continuous(position = "right", name = "f(y)", sec.axis = sec_axis(~., labels = NULL)) +
+    stat_function(fun = dgamma, args = list(rate = 1, shape = 1), aes(colour = "1 & 1")) + 
+    stat_function(fun = dgamma, args = list(rate = 1, shape = 2), aes(colour = "1 & 2")) + 
+    stat_function(fun = dgamma, args = list(rate = 1, shape = 4), aes(colour = "1 & 4")) +
+    scale_color_manual("Scale & Shape \n Parameters", values = c("black","blue","red")) + labs(x = "\n y", y = "f(y) \n",  title = "Negative Gamma Distribution Plots\n with constant scale and different Shape") +  theme(plot.title = element_text(hjust = 0.5), axis.title.x = element_text(face="bold", colour="blue", size = 15), axis.title.y = element_text(face="bold", colour="blue", size = 15), legend.title = element_text(face="bold", size = 12),legend.position = "right") + theme_classic()
+
+
+    ggplot(data.frame(x = c(x_upper_g, x_lower_g)), aes(x = x)) + xlim(c(x_upper_g,x_lower_g)) + scale_y_continuous(position = "right", name = "f(y)", sec.axis = sec_axis(~., labels = NULL)) +
+    stat_function(fun = dgamma, args = list(rate = 1, shape = 1), aes(colour = "1 & 1")) + 
+    stat_function(fun = dgamma, args = list(rate = 1, shape = 2), aes(colour = "1 & 2")) + 
+    stat_function(fun = dgamma, args = list(rate = 1, shape = 4), aes(colour = "1 & 4")) +
+    scale_color_manual("Scale & Shape \n Parameters", values = c("black","blue","red")) + labs(x = "\n y", y = "f(y) \n",  title = "Negative Gamma Distribution Plots\n with constant scale and different Shape") +  theme(plot.title = element_text(hjust = 0.5), axis.title.x = element_text(face="bold", colour="blue", size = 15), axis.title.y = element_text(face="bold", colour="blue", size = 15), legend.title = element_text(face="bold", size = 12),legend.position = "right")
+
+    
+# positive Gamma Distribution for constant scale and different shapes 
+      x_lower_g <- 0
+      x_upper_g <- 15
+    ggplot(data.frame(x = c(x_lower_g,x_upper_g)), aes(x = x)) + xlim(c(x_lower_g,x_upper_g)) +
+    stat_function(fun = dgamma, args = list(rate = 1, shape = 1), aes(colour = "1 & 1")) + 
+    stat_function(fun = dgamma, args = list(rate = 1, shape = 2), aes(colour = "1 & 2")) + 
+    stat_function(fun = dgamma, args = list(rate = 1, shape = 4), aes(colour = "1 & 4")) +
+    scale_color_manual("Scale & Shape \n Parameters", values = c("green","grey","magenta")) + labs(x = "\n y", y = "f(y) \n",  title = "Gamma Distribution Plots\n with constant scale and different Shape") +  theme(plot.title = element_text(hjust = 0.5), axis.title.x = element_text(face="bold", colour="blue", size = 15), axis.title.y = element_text(face="bold", colour="blue", size = 15), legend.title = element_text(face="bold", size = 12),legend.position = "right") + theme_classic()
+    
+    
+     ggplot(data.frame(x = c(x_lower_g,x_upper_g)), aes(x = x)) + xlim(c(x_lower_g,x_upper_g)) +
+    stat_function(fun = dgamma, args = list(rate = 1, shape = 1), aes(colour = "1 & 1")) + 
+    stat_function(fun = dgamma, args = list(rate = 1, shape = 2), aes(colour = "1 & 2")) + 
+    stat_function(fun = dgamma, args = list(rate = 1, shape = 4), aes(colour = "1 & 4")) +
+    scale_color_manual("Scale & Shape \n Parameters", values = c("orange","purple","gold")) + labs(x = "\n y", y = "f(y) \n",  title = "Gamma Distribution Plots\n with constant scale and different Shape") +  theme(plot.title = element_text(hjust = 0.5), axis.title.x = element_text(face="bold", colour="black", size = 12), axis.title.y = element_text(face="bold", colour="black", size = 12), legend.title = element_text(face="bold", size = 12),legend.position = "right")
+     
+     
+
+```
+ 
+
